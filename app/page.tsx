@@ -5,9 +5,14 @@ import { FaMoneyBillWave, FaChartLine, FaGift, FaUtensils } from 'react-icons/fa
 import { MdSavings } from 'react-icons/md'
 import { createClient } from '@supabase/supabase-js'
 
+// ตรวจสอบ environment variables
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  console.error('Missing Supabase environment variables')
+}
+
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 )
 
 export default function Home() {
@@ -17,43 +22,86 @@ export default function Home() {
     wants: 0,
     needs: 0
   })
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchExpenses = async () => {
-      const { data: incomeData } = await supabase
-        .from('expenses')
-        .select('amount')
-        .eq('type', 'income')
-        .single()
+      try {
+        console.log('Fetching expenses...')
+        console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+        
+        const { data: incomeData, error: incomeError } = await supabase
+          .from('expenses')
+          .select('amount')
+          .eq('type', 'income')
+          .single()
 
-      const { data: savingsData } = await supabase
-        .from('expenses')
-        .select('amount')
-        .eq('type', 'savings')
-        .single()
+        if (incomeError) {
+          console.error('Error fetching income:', incomeError)
+          setError(incomeError.message)
+          return
+        }
 
-      const { data: wantsData } = await supabase
-        .from('expenses')
-        .select('amount')
-        .eq('type', 'wants')
-        .single()
+        const { data: savingsData, error: savingsError } = await supabase
+          .from('expenses')
+          .select('amount')
+          .eq('type', 'savings')
+          .single()
 
-      const { data: needsData } = await supabase
-        .from('expenses')
-        .select('amount')
-        .eq('type', 'needs')
-        .single()
+        if (savingsError) {
+          console.error('Error fetching savings:', savingsError)
+          setError(savingsError.message)
+          return
+        }
 
-      setExpenses({
-        income: incomeData?.amount || 0,
-        savings: savingsData?.amount || 0,
-        wants: wantsData?.amount || 0,
-        needs: needsData?.amount || 0
-      })
+        const { data: wantsData, error: wantsError } = await supabase
+          .from('expenses')
+          .select('amount')
+          .eq('type', 'wants')
+          .single()
+
+        if (wantsError) {
+          console.error('Error fetching wants:', wantsError)
+          setError(wantsError.message)
+          return
+        }
+
+        const { data: needsData, error: needsError } = await supabase
+          .from('expenses')
+          .select('amount')
+          .eq('type', 'needs')
+          .single()
+
+        if (needsError) {
+          console.error('Error fetching needs:', needsError)
+          setError(needsError.message)
+          return
+        }
+
+        setExpenses({
+          income: incomeData?.amount || 0,
+          savings: savingsData?.amount || 0,
+          wants: wantsData?.amount || 0,
+          needs: needsData?.amount || 0
+        })
+      } catch (err) {
+        console.error('Error fetching expenses:', err)
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      }
     }
 
     fetchExpenses()
   }, [])
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-gray-100 p-4">
+        <div className="max-w-md mx-auto bg-white rounded-lg shadow p-4">
+          <p className="text-red-500">Error: {error}</p>
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main className="min-h-screen bg-gray-100 p-4">
