@@ -41,7 +41,7 @@ export default function Home() {
           .from('expenses')
           .select('amount')
           .eq('type', 'income')
-          .single()
+          .maybeSingle()
 
         if (incomeError) {
           console.error('Error fetching income:', incomeError)
@@ -53,7 +53,7 @@ export default function Home() {
           .from('expenses')
           .select('amount')
           .eq('type', 'savings')
-          .single()
+          .maybeSingle()
 
         if (savingsError) {
           console.error('Error fetching savings:', savingsError)
@@ -65,7 +65,7 @@ export default function Home() {
           .from('expenses')
           .select('amount')
           .eq('type', 'wants')
-          .single()
+          .maybeSingle()
 
         if (wantsError) {
           console.error('Error fetching wants:', wantsError)
@@ -77,7 +77,7 @@ export default function Home() {
           .from('expenses')
           .select('amount')
           .eq('type', 'needs')
-          .single()
+          .maybeSingle()
 
         if (needsError) {
           console.error('Error fetching needs:', needsError)
