@@ -6,13 +6,19 @@ import { MdSavings } from 'react-icons/md'
 import { createClient } from '@supabase/supabase-js'
 
 // ตรวจสอบ environment variables
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+console.log('Supabase URL:', supabaseUrl)
+console.log('Supabase Anon Key:', supabaseAnonKey ? 'exists' : 'missing')
+
+if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase environment variables')
 }
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  supabaseUrl || '',
+  supabaseAnonKey || ''
 )
 
 export default function Home() {
@@ -23,12 +29,13 @@ export default function Home() {
     needs: 0
   })
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchExpenses = async () => {
       try {
+        setLoading(true)
         console.log('Fetching expenses...')
-        console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
         
         const { data: incomeData, error: incomeError } = await supabase
           .from('expenses')
@@ -87,17 +94,33 @@ export default function Home() {
       } catch (err) {
         console.error('Error fetching expenses:', err)
         setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setLoading(false)
       }
     }
 
     fetchExpenses()
   }, [])
 
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gray-100 p-4">
+        <div className="max-w-md mx-auto bg-white rounded-lg shadow p-4">
+          <p className="text-center">กำลังโหลด...</p>
+        </div>
+      </main>
+    )
+  }
+
   if (error) {
     return (
       <main className="min-h-screen bg-gray-100 p-4">
         <div className="max-w-md mx-auto bg-white rounded-lg shadow p-4">
           <p className="text-red-500">Error: {error}</p>
+          <p className="text-sm text-gray-500 mt-2">
+            Supabase URL: {supabaseUrl ? '✓' : '✗'}<br />
+            Supabase Key: {supabaseAnonKey ? '✓' : '✗'}
+          </p>
         </div>
       </main>
     )
